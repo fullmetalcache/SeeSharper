@@ -11,9 +11,6 @@ namespace SeeSharper
 {
     class WebShot
     {
-      //  public WebBrowser browser;
-        ManualResetEvent oSigEvent = new ManualResetEvent(false);
-
         public void ScreenShot(string url)
         {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
@@ -25,8 +22,10 @@ namespace SeeSharper
             StreamReader reader = new StreamReader(dataStream);
             // Read the content.  
             string responseFromServer = reader.ReadToEnd();
+            string tempFile = url.Replace("://", "_");
+            tempFile = tempFile.Replace(".", "_");
 
-            File.WriteAllText(@".\temppage.html", responseFromServer);
+            File.WriteAllText( tempFile + ".html", responseFromServer);
 
             int width = 1024;
             int height = 768;
@@ -39,8 +38,8 @@ namespace SeeSharper
                 browser.Height = height;
                 browser.DocumentCompleted += OnDocumentCompleted;
                 string curDir = Directory.GetCurrentDirectory();
-                Uri uri = new Uri(String.Format("file:///{0}/temppage.html", curDir));
-                browser.Name = "Testtttt";
+                Uri uri = new Uri(String.Format("file:///{0}/{1}.html", curDir, tempFile));
+                browser.Name = tempFile;
                 browser.Navigate(uri);
                 Application.Run();
             });
@@ -64,6 +63,9 @@ namespace SeeSharper
                 resized.Save(filename, ImageFormat.Jpeg);
             }
             Console.WriteLine(browser.Name);
+            string curDir = Directory.GetCurrentDirectory();
+            File.Delete(String.Format("{0}/{1}.html", curDir, browser.Name));
+
             Application.ExitThread();
         }
     }

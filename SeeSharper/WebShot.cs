@@ -11,6 +11,15 @@ namespace SeeSharper
 {
     class WebShot
     {
+        private static Object _lockObject = new Object();
+        private int _threadsActive = 0;
+        private int _maxThreads;
+
+        public WebShot( int maxThreads )
+        {
+            _maxThreads = maxThreads;
+        }
+
         public void ScreenShot(string url)
         {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
@@ -45,6 +54,17 @@ namespace SeeSharper
             });
 
             th.SetApartmentState(ApartmentState.STA);
+
+            while( _threadsActive >= _maxThreads )
+            {
+                Thread.Sleep(500);
+            }
+
+            lock (_lockObject)
+            {
+                _threadsActive += 1;
+            }
+
             th.Start();
         }
 
@@ -65,6 +85,11 @@ namespace SeeSharper
             Console.WriteLine(browser.Name);
             string curDir = Directory.GetCurrentDirectory();
             File.Delete(String.Format("{0}/{1}.html", curDir, browser.Name));
+
+            lock (_lockObject)
+            {
+                _threadsActive -= 1;
+            }
 
             Application.ExitThread();
         }

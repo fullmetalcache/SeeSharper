@@ -8,10 +8,11 @@ namespace SeeSharper
     {
         static void Main(string[] args)
         {
-            WebShot webshot = new WebShot();
+            WebShot webshot = new WebShot(10);
 
-            webshot.ScreenShot("https://www.blackhillsinfosec.com");
+
             webshot.ScreenShot("https://google.com");
+            webshot.ScreenShot("https://www.blackhillsinfosec.com");
             webshot.ScreenShot("http://www.reddit.com");
         }
     }

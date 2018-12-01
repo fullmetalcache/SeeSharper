@@ -11,6 +11,9 @@ namespace SeeSharper
 {
     class WebShot
     {
+      //  public WebBrowser browser;
+        ManualResetEvent oSigEvent = new ManualResetEvent(false);
+
         public void ScreenShot(string url)
         {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
@@ -25,42 +28,43 @@ namespace SeeSharper
 
             File.WriteAllText(@".\temppage.html", responseFromServer);
 
-            int width = 800;
-            int height = 600;
+            int width = 1024;
+            int height = 768;
 
-            using (WebBrowser browser = new WebBrowser())
+            var th = new Thread(() =>
             {
+                WebBrowser browser = new WebBrowser();
                 browser.ScriptErrorsSuppressed = true;
                 browser.Width = width;
                 browser.Height = height;
-                browser.ScrollBarsEnabled = true;
-
-                // This will be called when the page finishes loading
-                browser.DocumentCompleted += WebShot.OnDocumentCompleted;
+                browser.DocumentCompleted += OnDocumentCompleted;
                 string curDir = Directory.GetCurrentDirectory();
                 Uri uri = new Uri(String.Format("file:///{0}/temppage.html", curDir));
+                browser.Name = "Testtttt";
                 browser.Navigate(uri);
-
-                // This prevents the application from exiting until
-                // Application.Exit is called
                 Application.Run();
-            }
+            });
+
+            th.SetApartmentState(ApartmentState.STA);
+            th.Start();
         }
 
-        static void OnDocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+
+        void OnDocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            // Now that the page is loaded, save it to a bitmap
             WebBrowser browser = (WebBrowser)sender;
             using (Graphics graphics = browser.CreateGraphics())
             using (Bitmap bitmap = new Bitmap(browser.Width, browser.Height, graphics))
             {
                 Rectangle bounds = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
                 browser.DrawToBitmap(bitmap, bounds);
-                bitmap.Save("screenshot1.bmp", ImageFormat.Bmp);
+            
+                Bitmap resized = new Bitmap(bitmap, new Size(bitmap.Width, bitmap.Height));
+                String filename = String.Format("{0}.jpeg", browser.Name);
+                resized.Save(filename, ImageFormat.Jpeg);
             }
-
-            // Instruct the application to exit
-            Application.Exit();
+            Console.WriteLine(browser.Name);
+            Application.ExitThread();
         }
     }
 }

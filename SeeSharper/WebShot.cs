@@ -17,7 +17,8 @@
  *      of websites and ignore certificate errors. WebRequest is used to make the initial request to get
  *      the HTML from the site. The HTML that was retrieved by WebRequest is then saved to a local .html
  *      file. The WebBrowser class is then used to load the local .html file, render the code, and 
- *      then take a screenshot of the rendered code.
+ *      then take a screenshot of the rendered code. The local .html file is deleted after the rendered
+ *      code has been transformed into an image.
  */
 
 using System;
@@ -33,8 +34,8 @@ namespace SeeSharper
     class WebShot
     {
         private static Object _lockObject = new Object();
-        private int _threadsActive = 0;
         private int _maxThreads;
+        private int _threadsActive = 0;
 
         public WebShot( int maxThreads )
         {
@@ -51,6 +52,19 @@ namespace SeeSharper
             int width = 1024;
             int height = 768;
 
+            string tempFile = getHTML(url);
+            screenshotFile(tempFile, width, height);
+        }
+
+        /// <summary>
+        /// Retrieves the HTML from a given URL, saves it to a file,
+        /// and then returns the name of the file. SSL Certificate
+        /// errors are ignored
+        /// </summary>
+        /// <param name="url">URL to retrieve</param>
+        /// <returns>Name of file to which HTML was saved</returns>
+        private string getHTML(string url)
+        {
             //This line is needed to ignore cert errors
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
@@ -64,8 +78,22 @@ namespace SeeSharper
             //Write HTML text to a file
             string tempFile = url.Replace("://", "_");
             tempFile = tempFile.Replace(".", "_");
-            File.WriteAllText( tempFile + ".html", responseFromServer);
+            File.WriteAllText(tempFile + ".html", responseFromServer);
 
+            return tempFile;
+        }
+
+        /// <summary>
+        /// Loads HTML from the given file, renders the HTML, and then calls
+        /// a callback function to screenshot the rendered HTML and save the
+        /// resulting image to a file. Note that the HTML file is deleted
+        /// after the image file is created.
+        /// </summary>
+        /// <param name="fileName">Name of file to load, render, and screenshot</param>
+        /// <param name="width">Width of screenshot</param>
+        /// <param name="height">Height of screenshot</param>
+        private void screenshotFile( string fileName, int width, int height )
+        {
             //Create a thread to load and render the saved HTML file.
             //Actual screenshotting takes place the OnDocumentCompleted callback function
             //that is added in this thread
@@ -83,8 +111,8 @@ namespace SeeSharper
 
                 //Open the saved HTML file and render it
                 string curDir = Directory.GetCurrentDirectory();
-                Uri uri = new Uri(String.Format("file:///{0}/{1}.html", curDir, tempFile));
-                browser.Name = tempFile;
+                Uri uri = new Uri(String.Format("file:///{0}/{1}.html", curDir, fileName));
+                browser.Name = fileName;
                 browser.Navigate(uri);
 
                 //Forces thread to wait until Application.ExitThread() is called in the 
@@ -98,7 +126,7 @@ namespace SeeSharper
             th.SetApartmentState(ApartmentState.STA);
 
             //Wait if we have reached the maximum number of active threads
-            while( _threadsActive >= _maxThreads )
+            while (_threadsActive >= _maxThreads)
             {
                 Thread.Sleep(500);
             }
@@ -116,7 +144,7 @@ namespace SeeSharper
         /// <summary>
         /// Callback function for WebBrowser DocumentCompleted event. Once the local HTML file has been
         /// loaded and rendered, this function will be called to take and save a screenshot of the rendered
-        /// site.
+        /// site. Note that the HTML file is deleted after the image file is created.
         /// </summary>
         /// <param name="sender">Object that generated the event that called this callback function</param>
         /// <param name="e">Additional arguments passed to the callback function</param>

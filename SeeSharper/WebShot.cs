@@ -1,11 +1,32 @@
-﻿using System;
+﻿/***
+ * File: WebShot.cs
+ * Author: Brian Fehrman (fullmetalcache)
+ * Date: 2018-12-27
+ * Description:
+ *      Contains the code for taking screenshots of websites.
+ *      Is slightly round-about to allow for ignoring certificate errors
+ *      and not needing any third-party dependencies. Basic explanation follows.
+ *      
+ *      WebRequest class respects the settings of ServicePointManager.ServerCertificateValidationCallback,
+ *      which allows for ignoring certificate errors. The WebRequest class, however,
+ *      does not have a way to take a screenshot.
+ *      
+ *      The WebBrowser class allows for taking screenshots but does not allow for ignoring certficate errors.
+ *      
+ *      The solution here is to combine both WebRequest and WebBrowser to be able to take screenshots
+ *      of websites and ignore certificate errors. WebRequest is used to make the initial request to get
+ *      the HTML from the site. The HTML that was retrieved by WebRequest is then saved to a local .html
+ *      file. The WebBrowser class is then used to load the local .html file, render the code, and 
+ *      then take a screenshot of the rendered code.
+ */
+
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading;
 using System.Windows.Forms;
 using System.Net;
 using System.IO;
-
 
 namespace SeeSharper
 {
@@ -20,57 +41,89 @@ namespace SeeSharper
             _maxThreads = maxThreads;
         }
 
+        /// <summary>
+        /// Function to create a screenshot of a given website
+        /// </summary>
+        /// <param name="url">URL of Site to Screenshot</param>
         public void ScreenShot(string url)
         {
-            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-            WebRequest request = WebRequest.Create(url);
-            WebResponse response = request.GetResponse();
-
-            Stream dataStream = response.GetResponseStream();
-            // Open the stream using a StreamReader for easy access.  
-            StreamReader reader = new StreamReader(dataStream);
-            // Read the content.  
-            string responseFromServer = reader.ReadToEnd();
-            string tempFile = url.Replace("://", "_");
-            tempFile = tempFile.Replace(".", "_");
-
-            File.WriteAllText( tempFile + ".html", responseFromServer);
-
+            //Screenshot Width and Height
             int width = 1024;
             int height = 768;
 
+            //This line is needed to ignore cert errors
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+
+            //Create a webrequest, get the response, convert the response into HTML text
+            WebRequest request = WebRequest.Create(url);
+            WebResponse response = request.GetResponse();
+            Stream dataStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(dataStream);
+            string responseFromServer = reader.ReadToEnd();
+
+            //Write HTML text to a file
+            string tempFile = url.Replace("://", "_");
+            tempFile = tempFile.Replace(".", "_");
+            File.WriteAllText( tempFile + ".html", responseFromServer);
+
+            //Create a thread to load and render the saved HTML file.
+            //Actual screenshotting takes place the OnDocumentCompleted callback function
+            //that is added in this thread
             var th = new Thread(() =>
             {
+                //Set resolution and ignore JavaScript errors in the page
                 WebBrowser browser = new WebBrowser();
                 browser.ScriptErrorsSuppressed = true;
                 browser.Width = width;
                 browser.Height = height;
+
+                //Add a callback function for when the site has been fully rendered
+                //This callback function is where the actual screenshotting takes place
                 browser.DocumentCompleted += OnDocumentCompleted;
+
+                //Open the saved HTML file and render it
                 string curDir = Directory.GetCurrentDirectory();
                 Uri uri = new Uri(String.Format("file:///{0}/{1}.html", curDir, tempFile));
                 browser.Name = tempFile;
                 browser.Navigate(uri);
+
+                //Forces thread to wait until Application.ExitThread() is called in the 
+                //OnDocumentCompleted callback function. This ensures that the WebBrowser
+                //object is not destroyed until after it is consumed by the OnDocumentCompleted
+                //callback function.
                 Application.Run();
             });
 
+            //Set to Single Threaded Application (STA) to all for the threading to work correctly
             th.SetApartmentState(ApartmentState.STA);
 
+            //Wait if we have reached the maximum number of active threads
             while( _threadsActive >= _maxThreads )
             {
                 Thread.Sleep(500);
             }
 
+            //Updated the number of active threads
             lock (_lockObject)
             {
                 _threadsActive += 1;
             }
 
+            //Start the latest thread
             th.Start();
         }
 
-
+        /// <summary>
+        /// Callback function for WebBrowser DocumentCompleted event. Once the local HTML file has been
+        /// loaded and rendered, this function will be called to take and save a screenshot of the rendered
+        /// site.
+        /// </summary>
+        /// <param name="sender">Object that generated the event that called this callback function</param>
+        /// <param name="e">Additional arguments passed to the callback function</param>
         void OnDocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
+            //Get WebBrowser object, create a new bitmap object, set resolution,
+            //set filetype (JPEG), and save the file.
             WebBrowser browser = (WebBrowser)sender;
             using (Graphics graphics = browser.CreateGraphics())
             using (Bitmap bitmap = new Bitmap(browser.Width, browser.Height, graphics))
@@ -82,15 +135,18 @@ namespace SeeSharper
                 String filename = String.Format("{0}.jpeg", browser.Name);
                 resized.Save(filename, ImageFormat.Jpeg);
             }
-            Console.WriteLine(browser.Name);
+
+            //Delete the temporary HTML file that was created in the ScreenShot method
             string curDir = Directory.GetCurrentDirectory();
             File.Delete(String.Format("{0}/{1}.html", curDir, browser.Name));
 
+            //Decrement the number of active threads
             lock (_lockObject)
             {
                 _threadsActive -= 1;
             }
 
+            //Allow the thread to exit and the objects to be destroyed
             Application.ExitThread();
         }
     }

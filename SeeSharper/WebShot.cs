@@ -53,9 +53,12 @@ namespace SeeSharper
             int height = 768;
 
             string tempFile = getHTML(url);
-            screenshotFile(tempFile, width, height);
-        }
+            if (tempFile != "")
+            {
+                screenshotFile(tempFile, width, height);
 
+            }
+        }
         /// <summary>
         /// Retrieves the HTML from a given URL, saves it to a file,
         /// and then returns the name of the file. SSL Certificate
@@ -70,10 +73,21 @@ namespace SeeSharper
 
             //Create a webrequest, get the response, convert the response into HTML text
             WebRequest request = WebRequest.Create(url);
-            WebResponse response = request.GetResponse();
-            Stream dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            string responseFromServer = reader.ReadToEnd();
+            request.Timeout = 15000;
+            string responseFromServer = "";
+
+            try
+            {
+                WebResponse response = request.GetResponse();
+                Stream dataStream = response.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                responseFromServer = reader.ReadToEnd();
+            }
+            catch
+            {
+                Console.WriteLine(String.Format("Timeout or Error reaching:{0}", url));
+                return "";
+            }
 
             //Write HTML text to a file
             string tempFile = url.Replace("://", "_");

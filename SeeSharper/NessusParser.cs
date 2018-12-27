@@ -41,7 +41,7 @@ namespace SeeSharper
                 //Extract the host address
                 string hostAddr = node.Attributes["name"].Value;
 
-                //Extract and Iterate through each ReportItem node
+                //Extract and Iterate through each ReportItem node for the current host
                 XmlNodeList reportItems = node.SelectNodes("ReportItem");
 
                 foreach (XmlNode item in reportItems)

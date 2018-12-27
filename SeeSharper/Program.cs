@@ -7,10 +7,6 @@
  * 
  */
 
-using System;
-using System.Threading;
-using System.Windows.Forms;
-
 namespace SeeSharper
 {
     class Program
@@ -21,9 +17,12 @@ namespace SeeSharper
             WebShot webshot = new WebShot(10);
 
             //Some examples of screenshotting for now...
-            webshot.ScreenShot("https://google.com");
-            webshot.ScreenShot("https://www.blackhillsinfosec.com");
-            webshot.ScreenShot("http://www.reddit.com");
+            //webshot.ScreenShot("https://google.com");
+            //webshot.ScreenShot("https://www.blackhillsinfosec.com");
+            //webshot.ScreenShot("http://www.reddit.com");
+            NessusParser nParser = new NessusParser();
+
+
         }
     }
 }

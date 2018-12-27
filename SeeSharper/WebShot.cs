@@ -52,10 +52,10 @@ namespace SeeSharper
             int width = 1024;
             int height = 768;
 
-            string tempFile = getHTML(url);
+            string tempFile = GetHTML(url);
             if (tempFile != "")
             {
-                screenshotFile(tempFile, width, height);
+                ScreenshotFile(tempFile, width, height);
 
             }
         }
@@ -66,7 +66,7 @@ namespace SeeSharper
         /// </summary>
         /// <param name="url">URL to retrieve</param>
         /// <returns>Name of file to which HTML was saved</returns>
-        private string getHTML(string url)
+        private string GetHTML(string url)
         {
             //This line is needed to ignore cert errors
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
@@ -106,7 +106,7 @@ namespace SeeSharper
         /// <param name="fileName">Name of file to load, render, and screenshot</param>
         /// <param name="width">Width of screenshot</param>
         /// <param name="height">Height of screenshot</param>
-        private void screenshotFile( string fileName, int width, int height )
+        private void ScreenshotFile( string fileName, int width, int height )
         {
             //Create a thread to load and render the saved HTML file.
             //Actual screenshotting takes place the OnDocumentCompleted callback function

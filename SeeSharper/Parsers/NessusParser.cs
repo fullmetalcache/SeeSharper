@@ -29,11 +29,30 @@ namespace SeeSharper
         public List<string> Parse(string fileName)
         {
             List<string> hostList = new List<string>();
+            XmlDocument xmlDoc = null;
+            XmlNodeList hosts = null;
 
-            //Load the .nessus file and get all of the host nodes
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(fileName);
-            XmlNodeList hosts = xmlDoc.GetElementsByTagName("ReportHost");
+            //Load the .nessus file
+            try
+            {
+                xmlDoc = new XmlDocument();
+                xmlDoc.Load(fileName);
+            }
+            catch
+            {
+                Console.WriteLine(String.Format("Error Opening File: {0}", fileName));
+                return null;
+            }
+
+            //Get all of the host nodes
+            try
+            {
+                hosts = xmlDoc.GetElementsByTagName("ReportHost");
+            }
+            catch
+            {
+                Console.WriteLine(String.Format("File does not appear to be a valid .nessus File: {0}", fileName));
+            } 
 
             //Parse each host node
             foreach (XmlNode node in hosts)

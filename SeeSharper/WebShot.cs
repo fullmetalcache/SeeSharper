@@ -36,10 +36,12 @@ namespace SeeSharper
         private static Object _lockObject = new Object();
         private int _maxThreads;
         private int _threadsActive = 0;
+        private int _timeout = 30000;
 
-        public WebShot( int maxThreads )
+        public WebShot( int maxThreads, int timeout )
         {
             _maxThreads = maxThreads;
+            _timeout = timeout * 1000;
         }
 
         /// <summary>
@@ -73,7 +75,7 @@ namespace SeeSharper
 
             //Create a webrequest, get the response, convert the response into HTML text
             WebRequest request = WebRequest.Create(url);
-            request.Timeout = 15000;
+            request.Timeout = _timeout;
             string responseFromServer = "";
 
             try

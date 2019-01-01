@@ -40,7 +40,7 @@ namespace SeeSharper
             }
             catch
             {
-                Console.WriteLine(String.Format("Error Opening File: {0}", fileName));
+                Console.WriteLine(String.Format("Error Opening Nessus File: {0}", fileName));
                 return null;
             }
 

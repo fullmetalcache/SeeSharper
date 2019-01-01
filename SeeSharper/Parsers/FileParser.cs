@@ -61,7 +61,7 @@ namespace SeeSharper
             }
             catch
             {
-                Console.WriteLine(String.Format("Error Opening File: {0}", fileName));
+                Console.WriteLine(String.Format("Error Opening Host File: {0}", fileName));
                 return null;
             }
 
@@ -70,8 +70,7 @@ namespace SeeSharper
             {
                 List<String> currHosts = new List<String>();
 
-                //Trim whitespace and strip http:// prefix as it is not needed and simplifies
-                //the list building process
+                //Trim whitespace
                 line = line.Trim();
 
                 //Handle option to prepend HTTP and HTTPS
@@ -106,7 +105,7 @@ namespace SeeSharper
                         if(host.Contains("://"))
                         {
                             prefix = host.Split("://".ToCharArray())[0] + "://";
-                            host = host.Split("://".ToCharArray())[1];
+                            host = host.Split(new string[] { "://" }, StringSplitOptions.None)[1];
                         }
 
                         //Remove port suffix, if present
